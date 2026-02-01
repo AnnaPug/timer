@@ -2,343 +2,272 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Neon Timer Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Timer Editor</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Emilys+Candy&family=Orbitron&family=Rubik+Mono+One&display=swap" rel="stylesheet">
 
 <style>
-:root{color-scheme:dark}
-*{box-sizing:border-box}
-
 body{
   margin:0;
-  padding:24px;
-  font-family:system-ui,-apple-system,Segoe UI,sans-serif;
-  background:radial-gradient(circle at top,#16163b,#050712 60%,#02030a);
-  color:#f5f5ff;
+  font-family:system-ui, sans-serif;
+  background:#0b1020;
+  color:#e9f8ff;
+  display:grid;
+  grid-template-columns:320px 1fr;
+  height:100vh;
 }
 
-h1{
-  margin:0 0 10px;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  text-shadow:0 0 16px #63f2ff;
+aside{
+  padding:16px;
+  background:#0f1733;
+  overflow:auto;
 }
 
-.layout{display:flex;gap:20px;flex-wrap:wrap}
+h2{margin-top:0}
 
-.panel{
-  background:linear-gradient(145deg,#090c23,#131633);
-  border-radius:16px;
-  padding:14px;
-  box-shadow:0 0 0 1px rgba(102,153,255,.25),
-             0 20px 40px rgba(0,0,0,.7);
-}
+label{display:block;margin-top:12px;font-size:.85rem}
 
-.controls{width:360px}
-.preview{width:320px}
-.output{flex:1;min-width:300px}
-
-label{font-size:.8rem}
-input,textarea{
+input,select,textarea,button{
   width:100%;
-  background:#050712;
-  border:1px solid #353863;
-  border-radius:8px;
-  color:#fff;
-  padding:6px 8px;
-}
-
-textarea{
-  min-height:360px;
-  font-family:monospace;
-  font-size:.78rem;
+  margin-top:4px;
+  padding:6px;
+  border-radius:6px;
+  border:none;
+  font-size:.9rem;
 }
 
 button{
-  width:100%;
-  margin-top:10px;
-  padding:9px;
-  border:none;
-  border-radius:999px;
-  background:linear-gradient(135deg,#4af2c5,#63f2ff);
-  font-weight:600;
+  margin-top:14px;
   cursor:pointer;
+  background:#63f2ff;
+  color:#02030a;
 }
-button:hover{filter:brightness(1.1)}
 
-.hr{border:none;border-top:1px solid #262b4b;margin:10px 0}
-
-/* ===== ANIMATION PICKER ===== */
-.anim-grid{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
+.anim-list{
+  display:flex;
   gap:8px;
+  margin-top:8px;
 }
-.anim-item{
-  padding:10px;
+
+.anim{
+  flex:1;
+  padding:8px;
+  background:#18214a;
   text-align:center;
-  border-radius:10px;
-  background:#050712;
-  border:1px solid #353863;
+  border-radius:8px;
   cursor:pointer;
   font-size:.75rem;
 }
-.anim-item.active{
-  border-color:#63f2ff;
-  box-shadow:0 0 10px #63f2ff;
+
+.anim.active{
+  outline:2px solid #63f2ff;
 }
 
-/* ===== PREVIEW ===== */
-.preview-box{
-  width:320px;
-  height:320px;
-  background:#050712;
-  border-radius:18px;
+main{
+  display:flex;
+  flex-direction:column;
+}
+
+#preview{
+  flex:1;
   display:flex;
   align-items:center;
   justify-content:center;
+  background:#02030a;
 }
 
-.timer-root{
+iframe{
   width:100%;
   height:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  border:none;
 }
 
-.timer-outer{
-  width:100%;
-  height:100%;
-  background-size:contain;
-  background-repeat:no-repeat;
-  background-position:center;
-  position:relative;
-}
-
-.timer-core{
-  position:absolute;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  width:65%;
-  aspect-ratio:1/1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.timer-time{
-  font-size:2.8em;
-  text-shadow:0 0 10px currentColor,0 0 24px currentColor;
-  user-select:none;
-}
-
-.finish-pulse{animation:pulse .6s infinite}
-.finish-shake{animation:shake .4s infinite}
-.finish-flash{animation:flash .8s infinite}
-
-@keyframes pulse{
-  0%{transform:scale(1)}
-  50%{transform:scale(1.15)}
-  100%{transform:scale(1)}
-}
-@keyframes shake{
-  0%{transform:translateX(0)}
-  25%{transform:translateX(-6px)}
-  50%{transform:translateX(6px)}
-  100%{transform:translateX(0)}
-}
-@keyframes flash{
-  0%,100%{opacity:1}
-  50%{opacity:.3}
-}
-
-.restart-btn{
-  position:absolute;
-  bottom:-34px;
-  padding:6px 14px;
-  font-size:.7rem;
-  border-radius:999px;
-  background:#63f2ff;
-  color:#02030a;
-  cursor:pointer;
+textarea{
+  height:180px;
+  background:#02030a;
+  color:#63f2ff;
+  font-family:monospace;
 }
 </style>
-
-<link id="fontLink" rel="stylesheet">
 </head>
 
 <body>
 
-<h1>Neon Timer Editor</h1>
+<aside>
+  <h2>Timer Editor</h2>
 
-<div class="layout">
+  <label>Длительность (сек)</label>
+  <input type="number" id="duration" value="90">
 
-<!-- CONTROLS -->
-<div class="panel controls">
+  <label>Шрифт</label>
+  <select id="font">
+    <option>Emilys Candy</option>
+    <option>Orbitron</option>
+    <option>Rubik Mono One</option>
+  </select>
 
-<label>Длительность (сек)</label>
-<input type="number" id="duration" value="30">
+  <label>Размер шрифта (em)</label>
+  <input type="number" step="0.1" id="fontSize" value="3">
 
-<label>Шрифт (Google Fonts)</label>
-<input id="font" value="Emilys Candy">
-
-<label>Размер цифр (em)</label>
-<input type="number" step="0.1" id="fontSize" value="2.8">
-
-<label>Фон (URL)</label>
-<input id="bg">
-
-<label>Цвет цифр</label>
-<input type="color" id="digitColor" value="#e9f8ff">
-
-<div class="hr"></div>
-
-<label>Анимация окончания</label>
-<div class="anim-grid" id="animGrid">
-  <div class="anim-item active" data-anim="none">Нет</div>
-  <div class="anim-item" data-anim="pulse">Pulse</div>
-  <div class="anim-item" data-anim="shake">Shake</div>
-  <div class="anim-item" data-anim="flash">Flash</div>
-</div>
-
-<label>
-  <input type="checkbox" id="autoRestart"> Автоперезапуск
-</label>
-
-<button id="generateBtn">Сгенерировать код</button>
-
-</div>
-
-<!-- PREVIEW -->
-<div class="panel preview">
-<div class="preview-box">
-  <div class="timer-root">
-    <div class="timer-outer" id="pOuter">
-      <div class="timer-core">
-        <div class="timer-time" id="pTime">0:30</div>
-        <div class="restart-btn" id="pRestart">Restart</div>
-      </div>
-    </div>
+  <label>Анимация окончания</label>
+  <div class="anim-list">
+    <div class="anim active" data-anim="none">None</div>
+    <div class="anim" data-anim="pulse">Pulse</div>
+    <div class="anim" data-anim="shake">Shake</div>
+    <div class="anim" data-anim="flash">Flash</div>
   </div>
-</div>
-</div>
 
-<!-- OUTPUT -->
-<div class="panel output">
-<textarea id="output"></textarea>
-</div>
+  <label>
+    <input type="checkbox" id="autoStart" checked>
+    Автозапуск
+  </label>
 
-</div>
+  <label>
+    <input type="checkbox" id="autoRestart">
+    Автоперезапуск
+  </label>
+
+  <button onclick="generate()">Сгенерировать код</button>
+</aside>
+
+<main>
+  <div id="preview">
+    <iframe id="frame"></iframe>
+  </div>
+  <textarea id="output" placeholder="HTML код для Genially"></textarea>
+</main>
 
 <script>
 const state={
-  duration:30,
+  duration:90,
   font:'Emilys Candy',
-  fontSize:2.8,
-  bg:'',
-  digitColor:'#e9f8ff',
+  fontSize:3,
   finishAnim:'none',
+  autoStart:true,
   autoRestart:false
 };
 
-let timerId=null,remain=state.duration;
+const frame=document.getElementById('frame');
 
-const pTime=document.getElementById('pTime');
-const pOuter=document.getElementById('pOuter');
-const fontLink=document.getElementById('fontLink');
-
-function applyPreview(){
-  fontLink.href=`https://fonts.googleapis.com/css2?family=${state.font.replace(/\s+/g,'+')}&display=swap`;
-  pTime.style.fontFamily=`'${state.font}',cursive`;
-  pTime.style.fontSize=state.fontSize+'em';
-  pTime.style.color=state.digitColor;
-  pOuter.style.backgroundImage=state.bg?`url("${state.bg}")`:'none';
+function update(){
+  state.duration=+duration.value;
+  state.font=font.value;
+  state.fontSize=+fontSize.value;
+  renderPreview();
 }
 
-function startPreview(){
-  clearInterval(timerId);
-  remain=state.duration;
-  pTime.className='timer-time';
+document.querySelectorAll('.anim').forEach(el=>{
+  el.onclick=()=>{
+    document.querySelectorAll('.anim').forEach(a=>a.classList.remove('active'));
+    el.classList.add('active');
+    state.finishAnim=el.dataset.anim;
+    renderPreview();
+  };
+});
 
-  function tick(){
-    pTime.textContent=format(remain);
-    if(remain<=0){
-      if(state.finishAnim!=='none')
-        pTime.classList.add('finish-'+state.finishAnim);
-      if(state.autoRestart){
-        setTimeout(startPreview,800);
-      }
-      return;
-    }
-    remain--;
-  }
-  tick();
-  timerId=setInterval(tick,1000);
+['duration','font','fontSize'].forEach(id=>{
+  document.getElementById(id).oninput=update;
+});
+
+autoStart.onchange=()=>state.autoStart=autoStart.checked;
+autoRestart.onchange=()=>state.autoRestart=autoRestart.checked;
+
+function renderPreview(){
+  frame.srcdoc=generateHTML(true);
 }
+
+function generate(){
+  output.value=generateHTML(false);
+}
+
+function generateHTML(preview){
+return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=${state.font.replace(/\\s+/g,'+')}&display=swap" rel="stylesheet">
+<style>
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  background:transparent;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+#timer{
+  font-family:'${state.font}',cursive;
+  font-size:${state.fontSize}em;
+  color:#e9f8ff;
+  text-shadow:0 0 10px currentColor;
+}
+button{
+  margin-top:10px;
+  padding:6px 14px;
+  border:none;
+  border-radius:999px;
+  background:#63f2ff;
+  cursor:pointer;
+}
+.finish-pulse{animation:pulse .6s infinite}
+.finish-shake{animation:shake .4s infinite}
+.finish-flash{animation:flash .8s infinite}
+@keyframes pulse{50%{transform:scale(1.15)}}
+@keyframes shake{
+  25%{transform:translateX(-6px)}
+  50%{transform:translateX(6px)}
+}
+@keyframes flash{50%{opacity:.3}}
+</style>
+</head>
+<body>
+
+<div id="timer">0:00</div>
+<button onclick="restart()">Restart</button>
+
+<script type="text/javascript">
+let total=${state.duration};
+let remaining=total;
+let el=document.getElementById('timer');
+let interval=null;
 
 function format(s){
   return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);
 }
 
-/* INPUTS */
-['duration','font','fontSize','bg','digitColor'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',e=>{
-    state[id]=e.target.type==='number'?+e.target.value:e.target.value;
-    applyPreview();
-    startPreview();
-    generate();
-  });
-});
-
-document.getElementById('autoRestart').onchange=e=>{
-  state.autoRestart=e.target.checked;
-};
-
-document.querySelectorAll('.anim-item').forEach(el=>{
-  el.onclick=()=>{
-    document.querySelectorAll('.anim-item').forEach(i=>i.classList.remove('active'));
-    el.classList.add('active');
-    state.finishAnim=el.dataset.anim;
-    startPreview();
-    generate();
-  };
-});
-
-document.getElementById('pRestart').onclick=startPreview;
-
-/* GENERATOR */
-function generate(){
-  document.getElementById('output').value=
-`<div id="timer">0:00</div>
-<button onclick="restart()">Restart</button>
-<script>
-let total=${state.duration},r=total,tid;
-const el=document.getElementById('timer');
-function f(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60)}
 function start(){
- clearInterval(tid);r=total;
- el.className='';
- tid=setInterval(()=>{
-  el.textContent=f(r);
-  if(r<=0){
-   ${state.finishAnim!=='none'?"el.classList.add('finish-"+state.finishAnim+"');":''}
-   ${state.autoRestart?'start();':''}
-   return;
+  clearInterval(interval);
+  remaining=total;
+  el.className='';
+  tick();
+  interval=setInterval(tick,1000);
+}
+
+function tick(){
+  el.textContent=format(remaining);
+  if(remaining<=0){
+    ${state.finishAnim!=='none' ? `el.classList.add('finish-${state.finishAnim}');` : ``}
+    clearInterval(interval);
+    ${state.autoRestart ? `setTimeout(start,800);` : ``}
+    return;
   }
-  r--;
- },1000);
-}
-function restart(){start()}
-start();
-<\/script>`;
+  remaining--;
 }
 
-document.getElementById('generateBtn').onclick=generate;
+function restart(){start();}
 
-applyPreview();
-startPreview();
-generate();
+${state.autoStart ? 'start();' : ''}
+</script>
+
+</body>
+</html>`;
+}
+
+renderPreview();
 </script>
 
 </body>
