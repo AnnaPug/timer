@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Neon Timer Editor</title>
+
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  padding:24px;
+  font-family:system-ui,-apple-system,Segoe UI,sans-serif;
+  background:radial-gradient(circle at top,#16163b,#050712 60%,#02030a);
+  color:#f5f5ff;
+}
+
+h1{
+  margin:0 0 6px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  text-shadow:0 0 16px #63f2ff;
+}
+
+.layout{
+  display:flex;
+  gap:20px;
+  flex-wrap:wrap;
+}
+
+.panel{
+  background:linear-gradient(145deg,#090c23,#131633);
+  border-radius:16px;
+  padding:14px;
+  box-shadow:0 0 0 1px rgba(102,153,255,.25),
+             0 20px 40px rgba(0,0,0,.7);
+}
+
+.controls{width:360px}
+.preview{width:320px}
+.output{flex:1;min-width:300px}
+
+label{font-size:.8rem}
+input,select,textarea{
+  width:100%;
+  background:#050712;
+  border:1px solid #353863;
+  border-radius:8px;
+  color:#fff;
+  padding:6px 8px;
+}
+
+textarea{
+  min-height:360px;
+  font-family:monospace;
+  font-size:.78rem;
+}
+
+.row{display:flex;gap:8px}
+.hr{border:none;border-top:1px solid #262b4b;margin:10px 0}
+
+button{
+  width:100%;
+  margin-top:10px;
+  padding:9px;
+  border:none;
+  border-radius:999px;
+  background:linear-gradient(135deg,#4af2c5,#63f2ff);
+  font-weight:600;
+  cursor:pointer;
+}
+button:hover{filter:brightness(1.1)}
+
+/* ===== PREVIEW ===== */
+
+.preview-box{
+  width:320px;
+  height:320px;
+  background:#050712;
+  border-radius:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.timer-root{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.timer-outer{
+  width:100%;
+  height:100%;
+  background-size:contain;
+  background-repeat:no-repeat;
+  background-position:center;
+  position:relative;
+}
+
+.timer-core{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:65%;
+  aspect-ratio:1/1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.timer-ring{
+  position:absolute;
+  inset:0;
+}
+
+.timer-time{
+  font-size:2.8em;
+  text-shadow:0 0 10px currentColor,0 0 24px currentColor;
+  user-select:none;
+}
+.finish-pulse{
+  animation:pulse .6s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%{transform:scale(1)}
+  50%{transform:scale(1.15)}
+  100%{transform:scale(1)}
+}
+</style>
+
+<link id="fontLink" rel="stylesheet">
+</head>
+
+<body>
+
+<h1>Neon Timer Editor</h1>
+
+<div class="layout">
+
+<!-- ===== CONTROLS ===== -->
+<div class="panel controls">
+
+<label>Длительность (сек)</label>
+<input type="number" id="duration" value="30">
+
+<label>Шрифт (Google Fonts)</label>
+<input id="font" value="Emilys Candy">
+
+<label>Размер цифр (em)</label>
+<input type="number" step="0.1" id="fontSize" value="2.8">
+
+<label>Фон (URL)</label>
+<input id="bg">
+
+<div class="hr"></div>
+
+<label>Цвет цифр</label>
+<input type="color" id="digitColor" value="#e9f8ff">
+
+<label>Цвет полоски</label>
+<input type="color" id="ringColor" value="#7fd7ff">
+
+<div class="hr"></div>
+
+<label>Запуск</label>
+<select id="startMode">
+  <option value="auto">Автостарт</option>
+  <option value="click">По клику</option>
+</select>
+
+<label>Анимация окончания</label>
+<select id="finishAnim">
+  <option value="none">Нет</option>
+  <option value="pulse">Пульсация</option>
+</select>
+
+<label>
+  <input type="checkbox" id="autoRestart"> Автоперезапуск
+</label>
+
+<button id="generate">Сгенерировать код</button>
+
+</div>
+
+<!-- ===== PREVIEW ===== -->
+<div class="panel preview">
+<div class="preview-box">
+<div class="timer-root">
+<div class="timer-outer" id="pOuter">
+<div class="timer-core">
+<div class="timer-ring">
+<svg viewBox="0 0 100 100">
+<circle cx="50" cy="50" r="38" stroke="#1e2b3a" stroke-width="6" fill="none"/>
+<circle id="pRing" cx="50" cy="50" r="38" stroke="#7fd7ff"
+ stroke-width="6" fill="none"
+ stroke-linecap="round"
+ style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+</svg>
+</div>
+<div class="timer-time" id="pTime">0:30</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ===== OUTPUT ===== -->
+<div class="panel output">
+<textarea id="output"></textarea>
+</div>
+
+</div>
+
+<script>
+/* ===== STATE ===== */
+const state = {
+  duration:30,
+  font:'Emilys Candy',
+  fontSize:2.8,
+  bg:'',
+  digitColor:'#e9f8ff',
+  ringColor:'#7fd7ff',
+  startMode:'auto',
+  finishAnim:'none',
+  autoRestart:false
+};
+
+/* ===== PREVIEW ===== */
+const pTime = document.getElementById('pTime');
+const pRing = document.getElementById('pRing');
+const pOuter = document.getElementById('pOuter');
+let remain = state.duration;
+const C = 2*Math.PI*38;
+pRing.style.strokeDasharray = C;
+
+function renderPreview(){
+  document.getElementById('fontLink').href =
+    `https://fonts.googleapis.com/css2?family=${state.font.replace(/\s+/g,'+')}&display=swap`;
+
+  pTime.style.fontFamily = `'${state.font}',cursive`;
+  pTime.style.fontSize = state.fontSize+'em';
+  pTime.style.color = state.digitColor;
+  pRing.style.stroke = state.ringColor;
+
+  if (state.bg) pOuter.style.backgroundImage = `url("${state.bg}")`;
+}
+
+function tick(){
+  pTime.textContent = format(remain);
+  pRing.style.strokeDashoffset = C*(1-remain/state.duration);
+
+  if (remain<=0){
+    if (state.finishAnim==='pulse') pTime.classList.add('finish-pulse');
+    if (state.autoRestart){
+      setTimeout(()=>{remain=state.duration},800);
+    }
+    return;
+  }
+  remain--;
+}
+
+function format(s){
+  return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);
+}
+
+setInterval(tick,1000);
+
+/* ===== INPUTS ===== */
+[
+ ['duration','duration'],
+ ['font','font'],
+ ['fontSize','fontSize'],
+ ['bg','bg'],
+ ['digitColor','digitColor'],
+ ['ringColor','ringColor'],
+ ['startMode','startMode'],
+ ['finishAnim','finishAnim'],
+ ['autoRestart','autoRestart','check']
+].forEach(([id,key,type])=>{
+  document.getElementById(id).addEventListener('input',e=>{
+    state[key]=type==='check'?e.target.checked:e.target.value;
+    remain=state.duration;
+    pTime.classList.remove('finish-pulse');
+    renderPreview();
+    generate();
+  });
+});
+
+/* ===== GENERATOR ===== */
+function generate(){
+  document.getElementById('output').value =
+`<!-- Neon Timer -->
+<link href="https://fonts.googleapis.com/css2?family=${state.font.replace(/\s+/g,'+')}&display=swap" rel="stylesheet">
+<div id="timer">0:00</div>
+<script>
+let total=${state.duration},r=total;
+const el=document.getElementById('timer');
+el.style.fontFamily='${state.font}';
+el.style.fontSize='${state.fontSize}em';
+el.style.color='${state.digitColor}';
+function t(){
+ el.textContent=Math.floor(r/60)+':'+(r%60<10?'0':'')+(r%60);
+ if(r<=0){
+ ${state.finishAnim==='pulse'?"el.style.animation='pulse .6s infinite';":''}
+ ${state.autoRestart?'r=total;':''}
+ return;
+ }
+ r--;
+}
+${state.startMode==='auto'?'setInterval(t,1000);':'el.onclick=()=>setInterval(t,1000);'}
+</script>
+<style>
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+</style>`;
+}
+
+generate();
+renderPreview();
+</script>
+
+</body>
+</html>
