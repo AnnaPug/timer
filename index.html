@@ -3,11 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Timer Editor</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Emilys+Candy&family=Orbitron&family=Rubik+Mono+One&display=swap" rel="stylesheet">
-
+<title>Редактор таймера для Genially</title>
 <style>
 body{
   margin:0;
@@ -26,16 +22,16 @@ aside{
 }
 
 h2{margin-top:0}
-
 label{display:block;margin-top:12px;font-size:.85rem}
 
-input,select,textarea,button{
+input,select,button,textarea{
   width:100%;
   margin-top:4px;
   padding:6px;
   border-radius:6px;
   border:none;
   font-size:.9rem;
+  box-sizing:border-box;
 }
 
 button{
@@ -43,6 +39,7 @@ button{
   cursor:pointer;
   background:#63f2ff;
   color:#02030a;
+  font-weight:600;
 }
 
 .anim-list{
@@ -89,75 +86,66 @@ textarea{
   background:#02030a;
   color:#63f2ff;
   font-family:monospace;
+  resize:vertical;
+  margin-top:8px;
 }
 </style>
 </head>
-
 <body>
 
 <aside>
-  <h2>Timer Editor</h2>
+<h2>Редактор таймера</h2>
 
-  <label>Длительность (сек)</label>
-  <input type="number" id="duration" value="90">
+<label>Длительность (сек)</label>
+<input type="number" id="duration" value="90">
 
-  <label>Шрифт</label>
-  <select id="font">
-    <option>Emilys Candy</option>
-    <option>Orbitron</option>
-    <option>Rubik Mono One</option>
-  </select>
+<label>Шрифт</label>
+<select id="font">
+  <option>Arial</option>
+  <option>Courier New</option>
+  <option>Verdana</option>
+  <option>Tahoma</option>
+</select>
 
-  <label>Размер шрифта (em)</label>
-  <input type="number" step="0.1" id="fontSize" value="3">
+<label>Размер цифр (em)</label>
+<input type="number" step="0.1" id="fontSize" value="6">
 
-  <label>Анимация окончания</label>
-  <div class="anim-list">
-    <div class="anim active" data-anim="none">None</div>
-    <div class="anim" data-anim="pulse">Pulse</div>
-    <div class="anim" data-anim="shake">Shake</div>
-    <div class="anim" data-anim="flash">Flash</div>
-  </div>
+<label>Фон таймера (URL)</label>
+<input type="text" id="bgUrl" value="https://i.postimg.cc/28yZbpGP/Chat-GPT-Image-19-noab-2025-g-21-37-10.png">
 
-  <label>
-    <input type="checkbox" id="autoStart" checked>
-    Автозапуск
-  </label>
+<label>Анимация окончания</label>
+<div class="anim-list">
+  <div class="anim active" data-anim="none">None</div>
+  <div class="anim" data-anim="pulse">Pulse</div>
+  <div class="anim" data-anim="shake">Shake</div>
+  <div class="anim" data-anim="flash">Flash</div>
+</div>
 
-  <label>
-    <input type="checkbox" id="autoRestart">
-    Автоперезапуск
-  </label>
+<label><input type="checkbox" id="autoStart" checked> Автозапуск</label>
+<label><input type="checkbox" id="autoRestart"> Автоперезапуск</label>
 
-  <button onclick="generate()">Сгенерировать код</button>
+<button onclick="generate()">Сгенерировать код</button>
 </aside>
 
 <main>
-  <div id="preview">
-    <iframe id="frame"></iframe>
-  </div>
-  <textarea id="output" placeholder="HTML код для Genially"></textarea>
+<div id="preview"><iframe id="frame"></iframe></div>
+<textarea id="output" placeholder="HTML код для Genially"></textarea>
 </main>
 
 <script>
-const state={
-  duration:90,
-  font:'Emilys Candy',
-  fontSize:3,
-  finishAnim:'none',
-  autoStart:true,
-  autoRestart:false
+const state = {
+  duration: 90,
+  font: 'Arial',
+  fontSize: 6,
+  bgUrl: 'https://i.postimg.cc/28yZbpGP/Chat-GPT-Image-19-noab-2025-g-21-37-10.png',
+  finishAnim: 'none',
+  autoStart: true,
+  autoRestart: false
 };
 
-const frame=document.getElementById('frame');
+const frame = document.getElementById('frame');
 
-function update(){
-  state.duration=+duration.value;
-  state.font=font.value;
-  state.fontSize=+fontSize.value;
-  renderPreview();
-}
-
+// обработка анимаций
 document.querySelectorAll('.anim').forEach(el=>{
   el.onclick=()=>{
     document.querySelectorAll('.anim').forEach(a=>a.classList.remove('active'));
@@ -167,77 +155,63 @@ document.querySelectorAll('.anim').forEach(el=>{
   };
 });
 
-['duration','font','fontSize'].forEach(id=>{
-  document.getElementById(id).oninput=update;
+// обновление state при изменении
+function update(){
+  state.duration = +document.getElementById('duration').value;
+  state.font = document.getElementById('font').value;
+  state.fontSize = +document.getElementById('fontSize').value;
+  state.bgUrl = document.getElementById('bgUrl').value.trim();
+  state.autoStart = document.getElementById('autoStart').checked;
+  state.autoRestart = document.getElementById('autoRestart').checked;
+  renderPreview();
+}
+
+['duration','font','fontSize','bgUrl','autoStart','autoRestart'].forEach(id=>{
+  document.getElementById(id).oninput = update;
+  document.getElementById(id).onchange = update;
 });
 
-autoStart.onchange=()=>state.autoStart=autoStart.checked;
-autoRestart.onchange=()=>state.autoRestart=autoRestart.checked;
-
 function renderPreview(){
-  frame.srcdoc=generateHTML(true);
+  frame.srcdoc = generateHTML(true);
 }
 
 function generate(){
-  output.value=generateHTML(false);
+  document.getElementById('output').value = generateHTML(false);
 }
 
+// генерация HTML с inline стилями, чтобы Genially отображал корректно
 function generateHTML(preview){
-return `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=${state.font.replace(/\\s+/g,'+')}&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
-html,body{
-  margin:0;
-  width:100%;
-  height:100%;
-  background:transparent;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-}
-#timer{
-  font-family:'${state.font}',cursive;
-  font-size:${state.fontSize}em;
-  color:#e9f8ff;
-  text-shadow:0 0 10px currentColor;
-}
-button{
-  margin-top:10px;
-  padding:6px 14px;
-  border:none;
-  border-radius:999px;
-  background:#63f2ff;
-  cursor:pointer;
-}
+html,body{margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:transparent;}
+#timer-container{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+#timer-bg{position:absolute;width:100%;height:100%;object-fit:contain;top:0;left:0;z-index:0;}
+#timer{font-family:'${state.font}',sans-serif;font-size:${state.fontSize}em;color:#e9f8ff;z-index:1;text-align:center;}
+button{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);padding:6px 14px;border:none;border-radius:999px;background:#63f2ff;color:#02030a;cursor:pointer;}
 .finish-pulse{animation:pulse .6s infinite}
 .finish-shake{animation:shake .4s infinite}
 .finish-flash{animation:flash .8s infinite}
 @keyframes pulse{50%{transform:scale(1.15)}}
-@keyframes shake{
-  25%{transform:translateX(-6px)}
-  50%{transform:translateX(6px)}
-}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}}
 @keyframes flash{50%{opacity:.3}}
 </style>
 </head>
 <body>
-
+<div id="timer-container">
+${state.bgUrl ? `<img id="timer-bg" src="${state.bgUrl}">` : ''}
 <div id="timer">0:00</div>
 <button onclick="restart()">Restart</button>
-
-<script type="text/javascript">
+<script>
 let total=${state.duration};
 let remaining=total;
 let el=document.getElementById('timer');
 let interval=null;
 
-function format(s){
-  return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);
-}
+function format(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);}
 
 function start(){
   clearInterval(interval);
@@ -250,9 +224,9 @@ function start(){
 function tick(){
   el.textContent=format(remaining);
   if(remaining<=0){
-    ${state.finishAnim!=='none' ? `el.classList.add('finish-${state.finishAnim}');` : ``}
+    ${state.finishAnim!=='none' ? `el.classList.add('finish-${state.finishAnim}');` : ''}
     clearInterval(interval);
-    ${state.autoRestart ? `setTimeout(start,800);` : ``}
+    ${state.autoRestart ? 'setTimeout(start,800);' : ''}
     return;
   }
   remaining--;
@@ -262,7 +236,7 @@ function restart(){start();}
 
 ${state.autoStart ? 'start();' : ''}
 </script>
-
+</div>
 </body>
 </html>`;
 }
