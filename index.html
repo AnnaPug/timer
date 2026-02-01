@@ -2,48 +2,38 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Таймер Редактор</title>
+<title>Редактор Неонового Таймера</title>
 <style>
-:root{color-scheme: dark;}
-*{box-sizing:border-box;}
-body{
-  margin:0; padding:16px;
-  font-family:system-ui,sans-serif;
-  background:#0b1020; color:#e9f8ff;
-  display:flex; gap:16px;
-}
-.panel{
-  background:#0f1733; padding:12px; border-radius:12px;
-  flex-shrink:0;
-  max-width:300px;
-}
-input,select,button{width:100%; margin-top:4px; padding:6px; border-radius:6px; border:none;}
-button{margin-top:12px; background:#63f2ff; color:#02030a; cursor:pointer; font-weight:600;}
-.anim-list{display:flex; gap:6px; margin-top:6px;}
-.anim{flex:1; text-align:center; padding:4px; background:#18214a; border-radius:6px; cursor:pointer; font-size:.75rem;}
+body{margin:0;padding:16px;font-family:system-ui,sans-serif;background:#0b1020;color:#f5f5ff;display:flex;gap:16px;}
+.panel{background:#0f1733;padding:12px;border-radius:12px;flex-shrink:0;max-width:320px;}
+.panel h2{margin-top:0;font-size:1.1rem;}
+input,select,button{width:100%;margin-top:4px;padding:6px;border-radius:6px;border:none;font-size:.9rem;box-sizing:border-box;}
+button{margin-top:12px;background:#63f2ff;color:#02030a;cursor:pointer;font-weight:600;}
+.anim-list{display:flex;gap:6px;margin-top:6px;}
+.anim{flex:1;text-align:center;padding:4px;background:#18214a;border-radius:6px;cursor:pointer;font-size:.75rem;}
 .anim.active{outline:2px solid #63f2ff;}
-#preview{flex:1; background:#02030a; display:flex; align-items:center; justify-content:center;}
-iframe{width:100%; height:100%; border:none;}
-textarea{width:100%; margin-top:12px; height:200px; background:#02030a; color:#63f2ff; font-family:monospace; resize:vertical;}
+#preview{flex:1;background:#02030a;display:flex;align-items:center;justify-content:center;}
+iframe{width:100%;height:100%;border:none;}
+textarea{width:100%;margin-top:12px;height:200px;background:#02030a;color:#63f2ff;font-family:monospace;resize:vertical;}
 </style>
 </head>
 <body>
 
 <div class="panel">
   <h2>Редактор Таймера</h2>
+  
   <label>Длительность (сек)</label>
-  <input type="number" id="duration" value="30">
+  <input type="number" id="totalSeconds" value="30">
+  
   <label>Шрифт</label>
-  <select id="font">
-    <option>Arial</option>
-    <option>Courier New</option>
-    <option>Verdana</option>
-    <option>Tahoma</option>
-  </select>
+  <input type="text" id="fontName" value="Emilys Candy">
+  
   <label>Размер цифр (em)</label>
-  <input type="number" step="0.1" id="fontSize" value="3">
+  <input type="number" step="0.1" id="fontSize" value="2.8">
+  
   <label>Фон таймера (URL)</label>
   <input type="text" id="bgUrl" value="https://i.postimg.cc/28yZbpGP/Chat-GPT-Image-19-noab-2025-g-21-37-10.png">
+  
   <label>Анимация окончания</label>
   <div class="anim-list">
     <div class="anim active" data-anim="none">None</div>
@@ -51,47 +41,73 @@ textarea{width:100%; margin-top:12px; height:200px; background:#02030a; color:#6
     <div class="anim" data-anim="shake">Shake</div>
     <div class="anim" data-anim="flash">Flash</div>
   </div>
+  
   <label><input type="checkbox" id="autoStart" checked> Автозапуск</label>
   <label><input type="checkbox" id="autoRestart"> Автоперезапуск</label>
-  <button id="generateBtn">Сгенерировать код</button>
+  
+  <label>Показывать кольцо прогресса</label>
+  <input type="checkbox" id="ringEnabled" checked>
+  
+  <label>Цвет кольца</label>
+  <input type="color" id="mainColor" value="#7fd7ff">
+  
+  <label>Цвет подложки кольца</label>
+  <input type="color" id="trackColor" value="#1e2b3a">
+  
+  <label>Толщина кольца</label>
+  <input type="range" id="ringWidth" min="3" max="12" step="0.5" value="6">
+  
+  <label><input type="checkbox" id="glowEnabled" checked> Glow-эффект</label>
+  
+  <button id="generateBtn">Сгенерировать HTML</button>
 </div>
 
 <div id="preview">
   <iframe id="frame"></iframe>
 </div>
 
-<textarea id="output" placeholder="HTML для Genially"></textarea>
+<textarea id="output" placeholder="HTML код для Genially"></textarea>
 
 <script>
-// состояние
+// === STATE ===
 const state={
-  duration:30, font:'Arial', fontSize:3,
-  bgUrl:'https://i.postimg.cc/28yZbpGP/Chat-GPT-Image-19-noab-2025-g-21-37-10.png',
-  finishAnim:'none', autoStart:true, autoRestart:false
+  totalSeconds:30,fontName:'Emilys Candy',fontSize:2.8,bgUrl:'',
+  finishAnim:'none',autoStart:true,autoRestart:false,
+  ringEnabled:true,mainColor:'#7fd7ff',trackColor:'#1e2b3a',ringWidth:6,glowEnabled:true
 };
 
+// === ELEMENTS ===
 const frame=document.getElementById('frame');
-const durationInput=document.getElementById('duration');
-const fontInput=document.getElementById('font');
+const totalSecondsInput=document.getElementById('totalSeconds');
+const fontNameInput=document.getElementById('fontName');
 const fontSizeInput=document.getElementById('fontSize');
 const bgUrlInput=document.getElementById('bgUrl');
 const autoStartInput=document.getElementById('autoStart');
 const autoRestartInput=document.getElementById('autoRestart');
+const ringEnabledInput=document.getElementById('ringEnabled');
+const mainColorInput=document.getElementById('mainColor');
+const trackColorInput=document.getElementById('trackColor');
+const ringWidthInput=document.getElementById('ringWidth');
+const glowEnabledInput=document.getElementById('glowEnabled');
 const output=document.getElementById('output');
 const animEls=document.querySelectorAll('.anim');
 
-// обновление состояния
+// === FUNCTIONS ===
 function updateState(){
-  state.duration=+durationInput.value;
-  state.font=fontInput.value;
+  state.totalSeconds=+totalSecondsInput.value;
+  state.fontName=fontNameInput.value.trim()||'Emilys Candy';
   state.fontSize=+fontSizeInput.value;
   state.bgUrl=bgUrlInput.value.trim();
   state.autoStart=autoStartInput.checked;
   state.autoRestart=autoRestartInput.checked;
+  state.ringEnabled=ringEnabledInput.checked;
+  state.mainColor=mainColorInput.value;
+  state.trackColor=trackColorInput.value;
+  state.ringWidth=+ringWidthInput.value;
+  state.glowEnabled=glowEnabledInput.checked;
   renderPreview();
 }
 
-// анимации
 animEls.forEach(el=>{
   el.onclick=()=>{
     animEls.forEach(a=>a.classList.remove('active'));
@@ -101,66 +117,73 @@ animEls.forEach(el=>{
   };
 });
 
-// события input
-[durationInput,fontInput,fontSizeInput,bgUrlInput,autoStartInput,autoRestartInput].forEach(el=>{
+[totalSecondsInput,fontNameInput,fontSizeInput,bgUrlInput,autoStartInput,autoRestartInput,ringEnabledInput,mainColorInput,trackColorInput,ringWidthInput,glowEnabledInput].forEach(el=>{
   el.oninput=updateState;
   el.onchange=updateState;
 });
 
-// генерация HTML
+// === GENERATE HTML ===
 function generateHTML(preview){
   return `<!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
 html,body{margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:transparent;}
 #timer-container{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
 #timer-bg{position:absolute;width:100%;height:100%;object-fit:contain;top:0;left:0;z-index:0;}
-#timer{font-family:'${state.font}',sans-serif;font-size:${state.fontSize}em;color:#e9f8ff;z-index:1;text-align:center;}
-button{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);padding:6px 12px;border:none;border-radius:999px;background:#63f2ff;color:#02030a;cursor:pointer;}
+#timer-core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;width:65%;aspect-ratio:1/1;}
+.timer-ring-wrap{position:absolute;inset:0;display:${state.ringEnabled?'flex':'none'};align-items:center;justify-content:center;}
+.timer-ring-wrap svg{width:100%;height:100%;}
+.timer-ring-bg{fill:none;stroke:${state.trackColor};stroke-width:${state.ringWidth};opacity:0.9;}
+.timer-ring-fg{fill:none;stroke:${state.mainColor};stroke-width:${state.ringWidth};stroke-linecap:round;transform-origin:50% 50%;transform:rotate(-90deg);${state.glowEnabled?'filter:drop-shadow(0 0 8px '+state.mainColor+') drop-shadow(0 0 18px '+state.mainColor+');':''}}
+#time-display{font-family:'${state.fontName}',cursive;font-size:${state.fontSize}em;color:#e9f8ff;${state.glowEnabled?'text-shadow:0 0 10px '+state.mainColor+',0 0 24px '+state.mainColor+';':''}}
 .finish-pulse{animation:pulse .6s infinite}
 .finish-shake{animation:shake .4s infinite}
 .finish-flash{animation:flash .8s infinite}
 @keyframes pulse{50%{transform:scale(1.15)}}
 @keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}}
 @keyframes flash{50%{opacity:.3}}
+button{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);padding:6px 12px;border:none;border-radius:999px;background:#63f2ff;color:#02030a;cursor:pointer;}
 </style>
 </head>
 <body>
 <div id="timer-container">
 ${state.bgUrl?`<img id="timer-bg" src="${state.bgUrl}">`:''}
-<div id="timer">0:00</div>
+<div id="timer-core">
+  <div class="timer-ring-wrap">
+    <svg viewBox="0 0 100 100">
+      <circle class="timer-ring-bg" cx="50" cy="50" r="38"></circle>
+      <circle class="timer-ring-fg" id="timer-ring" cx="50" cy="50" r="38"></circle>
+    </svg>
+  </div>
+  <div id="time-display">0:00</div>
+</div>
 <button onclick="restart()">Restart</button>
 <script>
-let total=${state.duration};
+let total=${state.totalSeconds};
 let remaining=total;
-let el=document.getElementById('timer');
+let el=document.getElementById('time-display');
+let ring=document.getElementById('timer-ring');
+let circumference=2*Math.PI*38;
+ring.style.strokeDasharray=circumference;
+ring.style.strokeDashoffset=circumference;
 let interval=null;
 
-function format(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);}
-function start(){clearInterval(interval);remaining=total;el.className='';tick();interval=setInterval(tick,1000);}
-function tick(){el.textContent=format(remaining);if(remaining<=0){${state.finishAnim!=='none'?`el.classList.add('finish-${state.finishAnim}');`:''}clearInterval(interval);${state.autoRestart?'setTimeout(start,800);':''}return;}remaining--;}
-function restart(){start();}
-${state.autoStart?'start();':''}
+function formatTime(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60);}
+function update(){el.textContent=formatTime(remaining);if(ring){ring.style.strokeDashoffset=circumference*(1-remaining/total);}}
+function startCountdown(){clearInterval(interval);remaining=total;el.className='';update();interval=setInterval(()=>{if(remaining<=0){${state.finishAnim!=='none'?`el.classList.add('finish-${state.finishAnim}');`:''}clearInterval(interval);${state.autoRestart?'setTimeout(startCountdown,800);':''}return;}remaining--;update();},1000);}
+function restart(){startCountdown();}
+${state.autoStart?'startCountdown();':''}
 </script>
 </div>
 </body>
 </html>`;
 }
 
-// обновление preview
-function renderPreview(){
-  frame.srcdoc=generateHTML(true);
-}
-
-// кнопка генерации
-document.getElementById('generateBtn').onclick=()=>{
-  output.value=generateHTML(false);
-};
-
-// старт preview
+// === PREVIEW & GENERATE ===
+function renderPreview(){frame.srcdoc=generateHTML(true);}
+document.getElementById('generateBtn').onclick=()=>{output.value=generateHTML(false);}
 renderPreview();
 </script>
 
